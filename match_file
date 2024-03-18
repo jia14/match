@@ -1,0 +1,64 @@
+Sub MatchAndWriteData()
+    Dim wsTarget As Worksheet
+    Dim wbSource As Workbook, wbCompare As Workbook, wbNew As Workbook
+    Dim wsSource As Worksheet, wsCompare As Worksheet
+    Dim lastRowSource As Long, lastRowCompare As Long, lastRowTarget As Long
+    Dim matchFound As Boolean
+    Dim folderPath As String, filePath As String
+    Dim compareFilePath As String
+    Dim i As Long, j As Long
+    
+    ' 设置文件夹路径和比较文件的路径
+    folderPath = "C:\YourFolder\" ' 修改为你的文件夹路径
+    compareFilePath = "C:\Path\To\Your\CompareFile.xlsx" ' 修改为你的另一个Excel文件的路径
+    
+    ' 创建一个新的Workbook用于保存结果
+    Set wbNew = Workbooks.Add
+    Set wsTarget = wbNew.Sheets(1)
+    
+    ' 打开比较用的Workbook
+    Set wbCompare = Workbooks.Open(compareFilePath)
+    Set wsCompare = wbCompare.Sheets(1)
+    lastRowCompare = wsCompare.Cells(wsCompare.Rows.Count, "A").End(xlUp).Row ' 假设数据在第A列
+    
+    ' 遍历文件夹中的所有Excel文件
+    filePath = Dir(folderPath & "*.xlsx")
+    Do While filePath <> ""
+        Set wbSource = Workbooks.Open(folderPath & filePath)
+        Set wsSource = wbSource.Sheets(1)
+        lastRowSource = wsSource.Cells(wsSource.Rows.Count, "A").End(xlUp).Row
+        
+        ' 对于每个源文件中的每行数据
+        For i = 2 To lastRowSource ' 假设第一行是标题行
+            matchFound = False
+            
+            ' 在比较文件中寻找匹配
+            For j = 2 To lastRowCompare
+                If wsSource.Cells(i, "A").Value = wsCompare.Cells(j, "A").Value And wsSource.Cells(i, "B").Value = wsCompare.Cells(j, "B").Value Then ' 假设A列是ISIN, B列是Price
+                    matchFound = True
+                    Exit For
+                End If
+            Next j
+            
+            ' 如果找到匹配，写入新的Workbook
+            If matchFound Then
+                lastRowTarget = wsTarget.Cells(wsTarget.Rows.Count, "A").End(xlUp).Row + 1
+                wsTarget.Cells(lastRowTarget, "A").Value = wsSource.Cells(i, "A").Value ' ISIN
+                wsTarget.Cells(lastRowTarget, "B").Value = wsSource.Cells(i, "B").Value ' Price
+            End If
+        Next i
+        
+        ' 关闭源Workbook
+        wbSource.Close False
+        filePath = Dir()
+    Loop
+    
+    ' 关闭比较用的Workbook
+    wbCompare.Close False
+    
+    ' 保存新的Workbook
+    wbNew.SaveAs Filename:="C:\Path\To\Your\NewFile.xlsx" ' 修改为你想要保存的路径和文件名
+    wbNew.Close False
+    
+    MsgBox "完成!"
+End Sub
